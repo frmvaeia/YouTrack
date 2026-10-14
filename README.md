@@ -10,18 +10,19 @@
 
 ## Настройка
 
-Нужны две переменные окружения (или строки `KEY=VALUE` в `~/.config/youtrack/env`):
-
-```
-YOUTRACK_URL=https://youtrack.example.com
-YOUTRACK_TOKEN=perm:...
-```
+Адрес YouTrack задан в `.claude/skills/youtrack/config.env` (`https://youtrack.wildberries.ru`). Его можно переопределить переменной `YOUTRACK_URL`.
 
 Токен выпускается в YouTrack: профиль → Account Security → Tokens → New token (scope YouTrack). Не коммитьте токен в репозиторий.
 
-**Облачная сессия Claude Code:** в настройках окружения добавьте переменные и разрешите хост YouTrack в Network access → Allowed domains. Если YouTrack доступен только из корпоративной сети или через VPN, запускайте Claude Code локально.
+**Облачная сессия Claude Code (рекомендуется):** окружение → **Edit environment** → **Network secrets** → **Add secret**:
+- **Name**: `YouTrack`
+- **Allowed websites**: `youtrack.wildberries.ru`
+- **Custom headers**: Name `Authorization`, Prefix `Bearer`, Value — токен `perm:...`
+- **Connect**
 
-**Локально:** склонируйте репозиторий и запустите `claude` в его папке. Чтобы скилл был доступен во всех проектах, скопируйте папку `.claude/skills/youtrack` в `~/.claude/skills/`.
+Хост из секрета становится доступен сам, менять Network access не нужно. Сессия токен не видит. Если YouTrack доступен только из корпоративной сети или через VPN, облако до него не достанет — тогда запускайте локально.
+
+**Локально:** склонируйте репозиторий, создайте `~/.config/youtrack/env` со строкой `YOUTRACK_TOKEN=perm:...` и запустите `claude` в папке репозитория. Чтобы скилл был доступен во всех проектах, скопируйте `.claude/skills/youtrack` в `~/.claude/skills/`.
 
 ## Команды
 

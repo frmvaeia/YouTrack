@@ -23,12 +23,12 @@ python3 $YT comment ABC-123 --file checklist.md   # ЗАПИСЬ — тольк�
 
 ## Настройка
 
-Нужны переменные окружения (или строки `KEY=VALUE` в `~/.config/youtrack/env`):
+- `YOUTRACK_URL` — адрес инстанса. Берётся из переменной окружения, `~/.config/youtrack/env` или `config.env` рядом с этим файлом (там уже `https://youtrack.wildberries.ru`).
+- Токен (`perm:...`):
+  - **облачная сессия** — network secret окружения для хоста YouTrack; прокси сам добавляет заголовок `Authorization`, переменная `YOUTRACK_TOKEN` не нужна;
+  - **локально** — `YOUTRACK_TOKEN` в окружении или в `~/.config/youtrack/env`.
 
-- `YOUTRACK_URL` — адрес инстанса, например `https://company.youtrack.cloud` (для standalone — с `/youtrack`, если он в пути).
-- `YOUTRACK_TOKEN` — permanent token `perm:...`.
-
-Токен никогда не коммить в репозиторий и не выводи в ответах. Если переменных нет — скажи пользователю добавить их в настройки окружения (environment variables / secrets), не проси вставлять токен в чат.
+Токен никогда не коммить в репозиторий и не выводи в ответах. Если `me` отвечает `401` или `cannot reach` — скажи пользователю добавить network secret (или токен локально), не проси вставлять токен в чат.
 
 ## Сценарии
 

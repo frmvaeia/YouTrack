@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Minimal YouTrack REST client for Claude Code skills (stdlib only).
 
-Config (env vars, or KEY=VALUE lines in ~/.config/youtrack/env):
+Config: env vars, else KEY=VALUE lines in ~/.config/youtrack/env,
+else config.env next to this skill (committed, no secrets):
   YOUTRACK_URL    e.g. https://company.youtrack.cloud  (or https://host/youtrack)
-  YOUTRACK_TOKEN  permanent token, "perm:..."
+  YOUTRACK_TOKEN  permanent token, "perm:...". Optional in a cloud session where
+                  a network secret for the host adds the Authorization header.
 
 Commands:
   me                              check auth
@@ -41,19 +43,25 @@ ISSUE_F = (
 
 
 # ---------------------------------------------------------------- transport
-def load_config():
+def read_env_file(path):
     cfg = {}
-    path = os.path.expanduser("~/.config/youtrack/env")
     if os.path.exists(path):
         for line in open(path, encoding="utf-8"):
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
                 cfg[k.strip()] = v.strip().strip('"').strip("'")
+    return cfg
+
+
+def load_config():
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cfg = {**read_env_file(os.path.join(here, "config.env")),
+           **read_env_file(os.path.expanduser("~/.config/youtrack/env"))}
     url = os.environ.get("YOUTRACK_URL") or cfg.get("YOUTRACK_URL")
     token = os.environ.get("YOUTRACK_TOKEN") or cfg.get("YOUTRACK_TOKEN")
-    if not url or not token:
-        sys.exit("error: set YOUTRACK_URL and YOUTRACK_TOKEN (env or ~/.config/youtrack/env)")
+    if not url:
+        sys.exit("error: set YOUTRACK_URL (env, ~/.config/youtrack/env or config.env)")
     return url.rstrip("/"), token
 
 
@@ -66,13 +74,15 @@ class YouTrack:
         data = json.dumps(body).encode() if body is not None else None
         req = urllib.request.Request(
             f"{self.url}/api/{path.lstrip('/')}{q}", data=data, method=method,
-            headers={"Authorization": f"Bearer {self.token}",
-                     "Accept": "application/json", "Content-Type": "application/json"})
+            headers={"Accept": "application/json", "Content-Type": "application/json",
+                     # no token: rely on the cloud proxy's network secret
+                     **({"Authorization": f"Bearer {self.token}"} if self.token else {})})
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 raw = r.read()
         except urllib.error.HTTPError as e:
-            sys.exit(f"error: HTTP {e.code} {method} {path}: {e.read().decode(errors='replace')[:500]}")
+            hint = "" if self.token or e.code != 401 else " (no YOUTRACK_TOKEN set and no network secret applied)"
+            sys.exit(f"error: HTTP {e.code} {method} {path}{hint}: {e.read().decode(errors='replace')[:500]}")
         except OSError as e:  # URLError, connection reset, timeout
             sys.exit(f"error: cannot reach {self.url}: {getattr(e, 'reason', e)}")
         return json.loads(raw) if raw else None
